@@ -1,6 +1,7 @@
 package cn.steamyao.seckill.service.impl;
 
 import cn.steamyao.seckill.common.aop.ServiceLimit;
+import cn.steamyao.seckill.common.aop.ServiceLock;
 import cn.steamyao.seckill.common.pojo.Result;
 import cn.steamyao.seckill.common.pojo.Seckill;
 import cn.steamyao.seckill.common.pojo.SuccessKilled;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.PostConstruct;
@@ -52,8 +54,8 @@ public class SeckillServiceImpl implements SeckillService {
     private Logger logger = LoggerFactory.getLogger(SeckillServiceImpl.class);
     private Semaphore semaphore = new Semaphore(100, false);
     private CountDownLatch latch = new CountDownLatch(1);
-    private Lock lock = new ReentrantReadWriteLock().readLock();
     private  LinkedBlockingQueue<SuccessKilled> queue = new LinkedBlockingQueue<SuccessKilled>();
+    private ReentrantLock lock = new ReentrantLock(false);
     //为了在 writeCountDb 对应的商品ID 设置其数目为0
     private int id = 0;
 
@@ -62,50 +64,14 @@ public class SeckillServiceImpl implements SeckillService {
        number = new AtomicInteger(seckillRepository.countById(seckillId));
    }*/
 
+
     @Override
-    //@ServiceLimit       //限流 150
-    @Transactional
-    public Result startSeckil(long userId, long seckillId) {
-        //双重校验  从数据库获取库存
-        if (isFirst.get()) {
-              lock.lock();
-               if (isFirst.get()){
-                   isFirst.set(false);
-                   number = new AtomicInteger(service.countById(seckillId));
-                   latch.countDown();
-                }
-              //  number = new AtomicInteger(seckillRepository.countById(seckillId));
-               // isFirst.set(false);
-              lock.unlock();
-            }
-        /*while (true) {
-            if (number.intValue() != 0) {
-                return startKilled(userId, seckillId);
-            }
-            try {
-                Thread.sleep(10);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }  */
-        if(number.intValue() == 0 ){
-            try {               //等10ms
-                latch.await(1000, TimeUnit.SECONDS);
-                return startKilled(userId, seckillId);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        if (number.intValue() >0) {
-            return startKilled(userId, seckillId);
-        }
-        logger.info("用户：" + userId + "没有抢到商品");
-        return  null;
+    public Result startSeckil(long seckillId, long userId) {
+        return null;
     }
 
-
     @Transactional
-    public Result startKilled(long userId, long seckillId) {
+    public Result startKilled(long seckillId, long userId) {
         if(id==0){
             this.id = (int)seckillId;
         }
@@ -118,12 +84,12 @@ public class SeckillServiceImpl implements SeckillService {
                 semaphore.release();
                 return Result.ok("成功");
             } catch (InterruptedException e) {
-                logger.info("用户：" + userId + "没有抢到商品");
+                logger.info("用户：" + userId + "  没有抢到商品");
                 e.printStackTrace();
                 return Result.error("失败");
             }
         } else {
-            logger.info("用户：" + userId + "没有抢到商品");
+            logger.info("用户：" + userId + "  没有抢到商品");
             return Result.error("失败");
         }
     }
@@ -146,22 +112,45 @@ public class SeckillServiceImpl implements SeckillService {
     }
 
 
-
-
+    /**
+     * 功能描述: 设置事务隔离级别为可重复读  避免脏读 和不可重复读
+     * 只设置 Transactional 的话，会出现超卖101，百度了一下，也没找到默认的隔离级别是什么
+     * https://blog.csdn.net/qq_36647176/article/details/85559873
+     * @date: 2019/4/22 9:25
+     */
     @Override
+    @Transactional(isolation = Isolation.REPEATABLE_READ)
     public Result startSeckilLock(long seckillId, long userId) {
+        try {
+            lock.lock();
+            count = service.countById(seckillId);
+            if (count>0){
+                service.descCount(seckillId);
+                queue.add(new SuccessKilled(seckillId, userId, (short) 0, new Timestamp(System.currentTimeMillis())));
+                logger.info("用户：" + userId + "    抢到了ID为" + seckillId + "的商品");
+            }else {
+                logger.info("用户：" + userId + "没有抢到商品");
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+            logger.info("用户：" + userId + "没有抢到商品");
+        }finally {
+         lock.unlock();
+        }
         return null;
     }
 
     @Override
+    @ServiceLock
+    @Transactional            //加了AOP锁，就直接调用不加锁的方法
     public Result startSeckilAopLock(long seckillId, long userId) {
-        return null;
+        return simpelSeckill(seckillId,userId);
     }
 
 
     private Integer c;
     @Override
-    //@Transactional   //todo 加了事务 会出现死锁与事务回退（不会超卖）   不加会出现超卖
+    @Transactional   //todo 加了事务 会出现死锁与事务回退（不会超卖）   不加会出现超卖
     public Result seckilDBPCCOne(long seckillId, long userId) {
         //每次都要查数据库 所以不用院子类也可以
         c = service.selectPCCOne(seckillId);
@@ -183,7 +172,6 @@ public class SeckillServiceImpl implements SeckillService {
     public Result seckilDBPCCTwo(long seckillId, long userId) {
         c = service.selectPCCTwo(seckillId);
         if (c!=null&&c.intValue() > 0) {
-            //todo 这里可能会导致库存为负数
             service.descCount(seckillId);
             queue.add(new SuccessKilled(seckillId, userId, (short) 0, new Timestamp(System.currentTimeMillis())));
             logger.info("用户：" + userId + "    抢到了ID为" + seckillId + "的商品");

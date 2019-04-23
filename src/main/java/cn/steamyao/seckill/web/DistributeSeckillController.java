@@ -1,6 +1,8 @@
 package cn.steamyao.seckill.web;
 
 import cn.steamyao.seckill.common.pojo.Result;
+import cn.steamyao.seckill.quene.disruptor.DisruptorUtils;
+import cn.steamyao.seckill.quene.disruptor.SeckillEvent;
 import cn.steamyao.seckill.quene.kafka.KafkaSender;
 import cn.steamyao.seckill.quene.redis.RedisSender;
 import cn.steamyao.seckill.service.ProductService;
@@ -116,10 +118,10 @@ public class DistributeSeckillController {
         return Result.ok("请求正确");
     }
 
-    @ApiOperation(value = "redis 分布式锁")
-    @PostMapping("/redisLockSeckill")
-    public Result redisLockSeckill(long seckillId){
-        LOGGER.info("开始redis 分布式锁秒杀");
+    @ApiOperation(value = "Disruptor队列  秒杀")
+    @PostMapping("/disruptorSeckill")
+    public Result disruptorSeckill(long seckillId){
+        LOGGER.info("开始Disruptor队列  秒杀");
         //每次请求都是新建线程池
         executor = getThredPool(executor);
         for (int i = 0; i < 500; i++) {
@@ -127,18 +129,19 @@ public class DistributeSeckillController {
             Runnable task = new Runnable() {
                 @Override
                 public void run() {
-                    lockService.seckillRedisLock(seckillId,userId);
+                    SeckillEvent event = new SeckillEvent(seckillId,userId);
+                    DisruptorUtils.producer(event);
                 }
             };
             //对抛出线程池的任务进行处理  排名300外的直接抛出
             try{
                 executor.execute(task);
             } catch (RejectedExecutionException e) {
-                LOGGER.info("很抱歉! "+userId+"您没有抢到！");
+                LOGGER.info("很抱歉! "+userId+"  您没有抢到！");
             }
         }
         try {
-            Thread.sleep(80000);
+            Thread.sleep(8000);
             getSeckillCount(seckillId);
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -146,6 +149,8 @@ public class DistributeSeckillController {
         executor.shutdown();
         return Result.ok("请求正确");
     }
+
+
 
 
     @ApiOperation(value = "zookeeper 分布式锁")
@@ -180,6 +185,39 @@ public class DistributeSeckillController {
     }
 
 
+    @ApiOperation(value = "redis 分布式锁")
+    @PostMapping("/redisLockSeckill")
+    public Result redisLockSeckill(long seckillId){
+        LOGGER.info("开始redis 分布式锁秒杀");
+        //每次请求都是新建线程池
+        executor = getThredPool(executor);
+        for (int i = 0; i < 500; i++) {
+            final int userId = i;
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    lockService.seckillRedisLock(seckillId,userId);
+                }
+            };
+            //对抛出线程池的任务进行处理  排名300外的直接抛出
+            try{
+                executor.execute(task);
+            } catch (RejectedExecutionException e) {
+                LOGGER.info("很抱歉! "+userId+"您没有抢到！");
+            }
+        }
+        try {
+            Thread.sleep(80000);
+            getSeckillCount(seckillId);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        executor.shutdown();
+        return Result.ok("请求正确");
+    }
+
+
+
 
     @ApiOperation(value = "还原商品数据")
     @PostMapping("/zzzzzz")
@@ -191,6 +229,8 @@ public class DistributeSeckillController {
         LOGGER.info("还原商品数据成功！");
         return Result.ok("还原商品数据成功！");
     }
+
+
 
 
 

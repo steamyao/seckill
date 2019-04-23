@@ -32,13 +32,13 @@ public interface SeckillRepository extends JpaRepository<Seckill,Long>{
      * @param  seckillId
      */
     @Modifying@Transactional
-    @Query(value = "UPDATE seckill  SET number=number-1 WHERE seckill_id=?1",nativeQuery = true)
+    @Query(value = "UPDATE seckill  SET number=number-1 WHERE seckill_id=?1 AND number>0",nativeQuery = true)
     void descCount(long seckillId);
 
     /**
      * 功能描述 查询商品数量
      */
-    @Query(value = "SELECT count(number) FROM seckill WHERE seckill_id=?1",nativeQuery = true)
+    @Query(value = "SELECT number FROM seckill WHERE seckill_id=?1",nativeQuery = true)
     int countById(long seckillId);
 
 

@@ -24,4 +24,5 @@ public class ServiceTest {
      redisTemplate.opsForValue().set("a","qwe");
      System.out.println(redisTemplate.opsForValue().get("a"));
     }
+
 }

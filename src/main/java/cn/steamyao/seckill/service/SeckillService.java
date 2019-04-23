@@ -16,7 +16,7 @@ public interface SeckillService {
 
 
     /**
-     * 加锁的秒杀  从数据库读入商品数量       难以实现----------
+     * 加锁的秒杀  从数据库读入商品数量
      */
     Result startSeckil(long seckillId,long userId);
 
@@ -33,7 +33,7 @@ public interface SeckillService {
 
 
     /**
-     * 秒杀 二、程序锁
+     * 秒杀  程序锁
      * @param seckillId
      * @param userId
      * @return
@@ -41,7 +41,7 @@ public interface SeckillService {
     Result startSeckilLock(long seckillId,long userId);
 
     /**
-     * 秒杀 二、程序锁AOP
+     * 秒杀 AOP锁
      * @param seckillId
      * @param userId
      * @return

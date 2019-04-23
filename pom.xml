@@ -116,6 +116,16 @@
             <scope>compile</scope>
         </dependency>
 
+        <!--disruptor队列-->
+        <dependency>
+            <groupId>com.lmax</groupId>
+            <artifactId>disruptor</artifactId>
+            <version>3.4.1</version>
+            <scope>compile</scope>
+        </dependency>
+
+
+
     </dependencies>
 
 

@@ -19,7 +19,7 @@ import java.util.List;
  * @date 2019/4/17 21:04
  * @description
  */
-@Service
+@Service("productService")
 public class ProductServiceImpl implements ProductService{
 
     @Autowired

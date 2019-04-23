@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope
 @Aspect
-public class ServiceLimiterInterceptor {
+public class LimitAspect {
 
     ////每秒只发出5个令牌，此处是单进程服务的限流,内部采用令牌捅算法实现
     private static  RateLimiter rateLimiter = RateLimiter.create(5.0);
@@ -33,7 +33,7 @@ public class ServiceLimiterInterceptor {
     @Around("ServiceAspect()")
     public  Object around(ProceedingJoinPoint joinPoint) {
         Boolean flag = rateLimiter.tryAcquire();
-        System.out.println(flag);
+        //System.out.println(flag);
         Object obj = null;
         try {
             if(flag){

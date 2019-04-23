@@ -46,7 +46,7 @@ public class SimpleSeckillController {
    //可能是由于  SingleThreadExecutor()  线程池特殊的原因，所以并发还没有出错
     @ApiOperation(value = "乐观锁 一")
     @PostMapping("/DbOOCOne")
-    public Result dbOocOne(long  seckillId){
+    public Result dbOOCOne(long  seckillId){
         LOGGER.info("开始乐观锁 一   秒杀");
         //只有一个线程  队列是最大是无穷大的 有任务时将任务加入队列
         executor = Executors.newSingleThreadExecutor();
@@ -74,7 +74,7 @@ public class SimpleSeckillController {
     //这个乐观锁实现 没有完成预期的功能
     @ApiOperation(value = "乐观锁 二")
     @PostMapping("/DbOOCTwo")
-    public Result dbOocTwo(long seckillId){
+    public Result dbOOCTwo(long seckillId){
         LOGGER.info("开始乐观锁 二  秒杀");
         //只有一个线程  队列是最大是无穷大的 有任务时将任务加入队列
         executor = Executors.newSingleThreadExecutor();
@@ -102,7 +102,7 @@ public class SimpleSeckillController {
     //超卖 卖了107件
     @ApiOperation(value = "悲观锁一  ")
     @PostMapping("/DbPCCOne")
-    public Result DbPCC(long seckillId){
+    public Result DbPCCOne(long seckillId){
         LOGGER.info("开始悲观锁 一   秒杀");
         //核心线程 与 最大线程数量为10 队列可以为无穷大 默认的拒绝策略 AbortPolicy();
          executor = Executors.newFixedThreadPool(10);
@@ -128,7 +128,8 @@ public class SimpleSeckillController {
     }
 
 
-   //超卖 105件
+
+    //超卖 105件
     @ApiOperation(value = "悲观锁二  ")
     @PostMapping("/DbPCCTwo")
     public Result DbPCCTwo(long seckillId){
@@ -157,6 +158,67 @@ public class SimpleSeckillController {
     }
 
 
+
+    @ApiOperation(value = "AOP 锁  ")
+    @PostMapping("/seckillAop")
+    public Result  seckillAop(long seckillId){
+        LOGGER.info("开始 AOP 锁   秒杀");
+        //线程数量可以为无穷大  一有任务就创建线程
+        executor = Executors.newCachedThreadPool();
+        for (int i = 0; i < 500; i++) {
+            final int userId = i;
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    seckillService.startSeckilAopLock(seckillId,userId);
+                }
+            };
+
+            executor.execute(task);
+        }
+        try {
+            Thread.sleep(11000);
+            getSeckillCount(seckillId);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return Result.ok("请求正确");
+
+    }
+
+
+    @ApiOperation(value = "普通锁 锁  ")
+    @PostMapping("/seckillLock")
+    public Result  seckillLock(long seckillId){
+        LOGGER.info("开始 普通锁   秒杀");
+        //线程数量可以为无穷大  一有任务就创建线程
+        executor = Executors.newCachedThreadPool();
+        for (int i = 0; i < 500; i++) {
+            final int userId = i;
+            Runnable task = new Runnable() {
+                @Override
+                public void run() {
+                    seckillService.startSeckilLock(seckillId,userId);
+                }
+            };
+
+            executor.execute(task);
+        }
+        try {
+            Thread.sleep(11000);
+            getSeckillCount(seckillId);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return Result.ok("请求正确");
+
+    }
+
+
+
+
+
+
     @ApiOperation(value = "还原商品数据")
     @PostMapping("/zzzzzz")
     public Result run(){
@@ -167,6 +229,8 @@ public class SimpleSeckillController {
         LOGGER.info("还原商品数据成功！");
         return Result.ok("还原商品数据成功！");
     }
+
+
 
 
     /**
