@@ -13,7 +13,8 @@ import java.util.concurrent.Executors;
  * @description     https://blog.csdn.net/wangshuminjava/article/details/81046963
  *                  http://www.importnew.com/27652.html
  */
-//TODO 不能实例化 工具类  已解决：在消费者中需要通过spring.getbean()获取 servicebean  而spring工具类没有配置扫描
+//TODO 不能实例化 工具类
+//已解决：在消费者中需要通过spring.getbean()获取 servicebean  而spring工具类没有配置扫描
 public class DisruptorUtils {
 
     private  static Disruptor<SeckillEvent> disruptor;

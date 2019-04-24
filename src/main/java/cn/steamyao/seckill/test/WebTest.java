@@ -12,6 +12,14 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+
 /**
  * @author steamyao
  * @Package cn.steamyao.seckill.web
@@ -63,6 +71,8 @@ public class WebTest {
     public void test3(){
         lockService.seckillZkLock(1001,234);
     }
+
+
 
 
 }
