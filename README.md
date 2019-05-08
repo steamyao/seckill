@@ -2,7 +2,7 @@
 这个一个模拟秒杀场景的小 Demo（为了学习使用，非商业用途）
 ### 上手指南
 #### 开发环境
-springboot 2.1、IDEA  、maven 3.6、kafka 2.1，redis 3.0、zookeeper
+springboot 2.1、IDEA  、maven 3.6、kafka 2.1，redis 3.0、zookeeper\
 jdk 8.0、mysql8.0（这个不重要，换一个mysql-connection的jar包就行）
 #### 你将学到
 + 搭建springboot 2.1框架
