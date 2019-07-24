@@ -1,7 +1,7 @@
 
 ## 项目名称
 秒杀项目
-地址：https://github.com/steamyao/seckill   
+地址：https://github.com/steamyao/seckill
 用途：为了学习多线程并发的知识，模拟多线程秒杀环境
 ## 上手指南
 ##### 开发环境
@@ -32,7 +32,8 @@ mysql8.0（这个不重要，换一个mysql-connection的jar包就行）
 2.后台页面
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/20190508194356658.png)
 3.数据库
-![在这里插入图片描述](https://img-blog.csdnimg.cn/20190724155056597.png)
+![在这里插入图片描述](https://img-blog.csdnimg.cn/20190724155056597.png)   
+（若图片显示不出来，参考 https://blog.csdn.net/qq_36647176/article/details/89956805 ）
 #### 补充
 1. 在悲观锁一的实现中，由于加了事务，会出现死锁与事务回退（不会超卖），不加会出现超卖，所有会报出  Deadlock found when trying to get lock; try restarting transaction 异常      
 2. 数据库乐观锁二 超卖严重，这个属于乐观锁的问题。     
